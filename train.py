@@ -9,7 +9,9 @@ from network_files import RetinaNet
 from my_dataset import VOCDataSet
 from train_utils import GroupedBatchSampler, create_aspect_ratio_groups
 from train_utils import train_eval_utils as utils
+import wandb
 
+wandb.init(project="retinanet-project", entity="xinghanliuying")
 
 def create_model(num_classes):
     # 创建retinanet_res50_fpn模型
@@ -25,7 +27,7 @@ def create_model(num_classes):
 
     # 载入预训练权重
     # https://download.pytorch.org/models/retinanet_resnet50_fpn_coco-eeacb38b.pth
-    weights_dict = torch.load("/kaggle/input/retinanet_resnet50_fpn/retinanet_resnet50_fpn.pth", map_location='cpu')
+    weights_dict = torch.load("/kaggle/input/retinanet-resnet50-fpn/retinanet_resnet50_fpn.pth", map_location='cpu')
     # 删除分类器部分的权重，因为自己的数据集类别与预训练数据集类别(91)不一定致，如果载入会出现冲突
     del_keys = ["head.classification_head.cls_logits.weight", "head.classification_head.cls_logits.bias"]
     for k in del_keys:
@@ -36,6 +38,11 @@ def create_model(num_classes):
 
 
 def main(parser_data):
+    config = wandb.config  # Initialize config
+    config.batch_size = 4  # input batch size for training (default: 64)
+    config.epochs = 50  # number of epochs to train (default: 10)
+    config.lr = 0.1  # learning rate (default: 0.01)
+    config.momentum = 0.1  # SGD momentum (default: 0.5)
     device = torch.device(parser_data.device if torch.cuda.is_available() else "cpu")
     print("Using {} device training.".format(device.type))
 
@@ -128,7 +135,7 @@ def main(parser_data):
     train_loss = []
     learning_rate = []
     val_map = []
-
+    wandb.watch(model, log="all")
     for epoch in range(parser_data.start_epoch, parser_data.epochs):
         # train for one epoch, printing every 10 iterations
         mean_loss, lr = utils.train_one_epoch(model, optimizer, train_data_loader,
@@ -160,8 +167,14 @@ def main(parser_data):
             'epoch': epoch}
         if args.amp:
             save_files["scaler"] = scaler.state_dict()
-        torch.save(save_files, "/kaggle/working/resNetFpn-model-{}.pth".format(epoch))
-
+        if epoch > (parser_data.epochs - 20):
+           torch.save(save_files, "/kaggle/working/resNetFpn-model-{}.pth".format(epoch))
+        wandb.log({
+            "lr": lr,
+            "train_loss": mean_loss.item(),
+            "metrics/mAP_0.5": coco_info[1],
+            "metrics/mAP_0.5:0.95": coco_info[0],
+        })
     # plot loss and lr curve
     if len(train_loss) != 0 and len(learning_rate) != 0:
         from plot_curve import plot_loss_and_lr
