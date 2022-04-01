@@ -84,8 +84,8 @@ def main():
                  predict_classes,
                  predict_scores,
                  category_index,
-                 thresh=0.4,
-                 line_thickness=3)
+                 thresh=0.5,
+                 line_thickness=1)
         plt.imshow(original_img)
         plt.show()
         # 保存预测的图片结果
