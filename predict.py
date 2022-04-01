@@ -35,7 +35,7 @@ def main(predict_data):
 
     # create model
     # 注意：不包含背景
-    model = create_model(num_classes=2  )
+    model = create_model(num_classes=1)
 
     # load train weights
     train_weights = predict_data.model_path
