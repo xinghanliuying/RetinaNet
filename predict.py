@@ -35,12 +35,11 @@ def main(predict_data):
 
     # create model
     # 注意：不包含背景
-    model = create_model(num_classes=20)
+    model = create_model(num_classes=2  )
 
     # load train weights
     train_weights = predict_data.model_path
-    assert os.path.exists(train_weights), "{} file dose not exist.".format(train_weights)
-    model.load_state_dict(torch.load(train_weights, map_location=device)["model"])
+    model.load_state_dict(torch.load(train_weights, map_location=device)['model'])
     model.to(device)
 
     # read class_indict
