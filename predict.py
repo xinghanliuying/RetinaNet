@@ -28,7 +28,7 @@ def time_synchronized():
     return time.time()
 
 
-def main():
+def main(predict_data):
     # get devices
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using {} device.".format(device))
@@ -38,7 +38,7 @@ def main():
     model = create_model(num_classes=20)
 
     # load train weights
-    train_weights = "./save_weights/model.pth"
+    train_weights = predict_data.model_path
     assert os.path.exists(train_weights), "{} file dose not exist.".format(train_weights)
     model.load_state_dict(torch.load(train_weights, map_location=device)["model"])
     model.to(device)
@@ -52,7 +52,8 @@ def main():
     category_index = {v: k for k, v in class_dict.items()}
 
     # load image
-    original_img = Image.open("./test.jpg")
+    img_path = predict_data.image_path
+    original_img = Image.open(img_path)
 
     # from pil image to tensor, do not normalize image
     data_transform = transforms.Compose([transforms.ToTensor()])
@@ -89,9 +90,21 @@ def main():
         plt.imshow(original_img)
         plt.show()
         # 保存预测的图片结果
-        original_img.save("test_result.jpg")
+        original_img.save("/kaggle/working/test_result.jpg")
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=__doc__)
+
+    parser.add_argument('--model-path', default='./', help='model.path')
+    # 检测目标类别数(不包含背景)
+    parser.add_argument('--image_path', default='./', help='image.path')
+
+    args = parser.parse_args()
+    print(args)
+    main(args)
+
 
